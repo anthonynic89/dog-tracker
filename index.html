@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dog Tracker</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f5f0eb;
+      --card: #fff;
+      --primary: #6b4f3a;
+      --primary-light: #8b6f5a;
+      --accent: #e8a87c;
+      --accent2: #7db5a0;
+      --text: #2d2017;
+      --text-muted: #8a7060;
+      --border: #e0d5cc;
+      --danger: #d96b6b;
+      --success: #5a9e7a;
+      --shadow: 0 2px 12px rgba(0,0,0,0.08);
+      --radius: 16px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding-bottom: 2rem;
+    }
+
+    header {
+      background: var(--primary);
+      color: #fff;
+      padding: 1rem 1.25rem 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    header h1 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    header .paw { font-size: 1.5rem; }
+
+    .container { max-width: 480px; margin: 0 auto; padding: 1rem 1rem 0; }
+
+    /* Dog cards */
+    .dogs { display: flex; flex-direction: column; gap: 1rem; }
+
+    .dog-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .dog-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.25rem 0.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .dog-name-row { display: flex; align-items: center; gap: 0.5rem; }
+
+    .dog-emoji { font-size: 1.75rem; }
+
+    .dog-name {
+      font-size: 1.25rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      background: none;
+      padding: 0;
+      color: var(--text);
+    }
+
+    .dog-name:hover { text-decoration: underline; }
+
+    .edit-name-input {
+      font-size: 1.25rem;
+      font-weight: 700;
+      border: 2px solid var(--accent);
+      border-radius: 8px;
+      padding: 0.15rem 0.5rem;
+      color: var(--text);
+      width: 140px;
+    }
+
+    .dog-status {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+      padding: 0.75rem 1.25rem;
+    }
+
+    .status-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+    }
+
+    .status-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+    }
+
+    .status-value {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .status-value.stale { color: var(--danger); }
+    .status-value.ok { color: var(--success); }
+
+    .status-detail {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.1rem;
+    }
+
+    .dog-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      padding: 0 1.25rem 1.25rem;
+    }
+
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      padding: 0.65rem 1rem;
+      border-radius: 12px;
+      border: none;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+
+    .btn:active { transform: scale(0.97); opacity: 0.85; }
+
+    .btn-walk {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .btn-feed {
+      background: var(--accent2);
+      color: #fff;
+    }
+
+    /* Modal */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 100;
+      align-items: flex-end;
+      justify-content: center;
+    }
+
+    .modal-backdrop.open { display: flex; }
+
+    .modal {
+      background: var(--card);
+      border-radius: 24px 24px 0 0;
+      width: 100%;
+      max-width: 480px;
+      padding: 1.5rem 1.5rem 2rem;
+      animation: slideUp 0.25s ease;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+
+    .modal-handle {
+      width: 40px;
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      margin: 0 auto 1.25rem;
+    }
+
+    .modal h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 1.25rem;
+      color: var(--text);
+    }
+
+    .form-group { margin-bottom: 1rem; }
+
+    .form-group label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 0.4rem;
+    }
+
+    .form-group input[type="time"],
+    .form-group input[type="number"],
+    .form-group input[type="date"] {
+      width: 100%;
+      padding: 0.65rem 0.85rem;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-size: 1rem;
+      color: var(--text);
+      background: var(--bg);
+      appearance: none;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .checkbox-group {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      padding: 0.6rem 1rem;
+      background: var(--bg);
+      border-radius: 10px;
+      border: 1.5px solid var(--border);
+      flex: 1;
+      justify-content: center;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .checkbox-label input { display: none; }
+
+    .checkbox-label.checked {
+      background: #fff3ec;
+      border-color: var(--accent);
+    }
+
+    .modal-actions { display: flex; gap: 0.75rem; margin-top: 1.5rem; }
+
+    .btn-cancel {
+      background: var(--bg);
+      color: var(--text-muted);
+      flex: 1;
+    }
+
+    .btn-save {
+      background: var(--primary);
+      color: #fff;
+      flex: 2;
+    }
+
+    /* Activity log */
+    .section-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--text-muted);
+      margin: 1.5rem 0 0.6rem;
+    }
+
+    .log-list { display: flex; flex-direction: column; gap: 0.5rem; }
+
+    .log-item {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 0.75rem 1rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      box-shadow: var(--shadow);
+    }
+
+    .log-icon {
+      font-size: 1.2rem;
+      width: 2rem;
+      height: 2rem;
+      background: var(--bg);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .log-body { flex: 1; min-width: 0; }
+
+    .log-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    .log-dog-tag {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0.1rem 0.5rem;
+      border-radius: 20px;
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .log-meta {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-top: 0.2rem;
+    }
+
+    .log-delete {
+      background: none;
+      border: none;
+      color: var(--border);
+      cursor: pointer;
+      font-size: 1rem;
+      padding: 0.2rem;
+      line-height: 1;
+      transition: color 0.15s;
+    }
+
+    .log-delete:hover { color: var(--danger); }
+
+    .empty-log {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      padding: 1.5rem 0;
+    }
+
+    .badge {
+      font-size: 0.75rem;
+      padding: 0.1rem 0.45rem;
+      border-radius: 20px;
+      font-weight: 600;
+    }
+
+    .badge-pee { background: #fff3cd; color: #8a6914; }
+    .badge-poo { background: #e8d5c4; color: #6b3f1a; }
+
+    @media (min-width: 480px) {
+      .container { padding: 1.25rem 1.25rem 0; }
+      .modal { border-radius: 24px; margin-bottom: 2rem; }
+      .modal-backdrop { align-items: center; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <span class="paw">🐾</span>
+  <h1>Dog Tracker</h1>
+</header>
+
+<div class="container">
+  <div class="dogs" id="dogsContainer"></div>
+  <div class="section-title">Recent Activity</div>
+  <div class="log-list" id="logList"></div>
+</div>
+
+<!-- Walk Modal -->
+<div class="modal-backdrop" id="walkModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2 id="walkModalTitle">Log Walk</h2>
+    <div class="form-group">
+      <label>Date</label>
+      <input type="date" id="walkDate">
+    </div>
+    <div class="form-group">
+      <label>Time</label>
+      <input type="time" id="walkTime">
+    </div>
+    <div class="form-group">
+      <label>Duration (minutes)</label>
+      <input type="number" id="walkDuration" min="1" max="300" placeholder="20">
+    </div>
+    <div class="form-group">
+      <label>Bathroom</label>
+      <div class="checkbox-group">
+        <label class="checkbox-label" id="peeLabel">
+          <input type="checkbox" id="walkPee">
+          💛 Peed
+        </label>
+        <label class="checkbox-label" id="pooLabel">
+          <input type="checkbox" id="walkPoo">
+          💩 Pooped
+        </label>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-cancel" onclick="closeModal('walkModal')">Cancel</button>
+      <button class="btn btn-save" onclick="saveWalk()">Save Walk</button>
+    </div>
+  </div>
+</div>
+
+<!-- Feed Modal -->
+<div class="modal-backdrop" id="feedModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2 id="feedModalTitle">Log Feeding</h2>
+    <div class="form-group">
+      <label>Date</label>
+      <input type="date" id="feedDate">
+    </div>
+    <div class="form-group">
+      <label>Time</label>
+      <input type="time" id="feedTime">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-cancel" onclick="closeModal('feedModal')">Cancel</button>
+      <button class="btn btn-save" onclick="saveFeed()">Save Feeding</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── State ──────────────────────────────────────────────────────────────────
+
+  const DEFAULT_STATE = {
+    dogs: [
+      { id: 1, name: 'Shiro', emoji: '🐶' },
+      { id: 2, name: 'Tex', emoji: '🐕' }
+    ],
+    entries: []
+  };
+
+  function load() {
+    try {
+      const raw = localStorage.getItem('dogtracker');
+      return raw ? JSON.parse(raw) : { ...DEFAULT_STATE, dogs: DEFAULT_STATE.dogs.map(d => ({...d})), entries: [] };
+    } catch { return { ...DEFAULT_STATE, dogs: DEFAULT_STATE.dogs.map(d => ({...d})), entries: [] }; }
+  }
+
+  function save() {
+    localStorage.setItem('dogtracker', JSON.stringify(state));
+  }
+
+  let state = load();
+  let activeModal = null; // { type: 'walk'|'feed', dogId }
+
+  // ── Time helpers ───────────────────────────────────────────────────────────
+
+  function nowDateStr() {
+    const d = new Date();
+    return d.toISOString().slice(0, 10);
+  }
+
+  function nowTimeStr() {
+    const d = new Date();
+    return d.toTimeString().slice(0, 5);
+  }
+
+  function timeAgo(isoStr) {
+    if (!isoStr) return null;
+    const diff = Date.now() - new Date(isoStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'just now';
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ${mins % 60}m ago`;
+    const days = Math.floor(hrs / 24);
+    return `${days}d ago`;
+  }
+
+  function formatTime(isoStr) {
+    if (!isoStr) return '';
+    const d = new Date(isoStr);
+    return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  }
+
+  function formatDate(isoStr) {
+    if (!isoStr) return '';
+    const d = new Date(isoStr);
+    const today = new Date();
+    const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
+    if (d.toDateString() === today.toDateString()) return 'Today';
+    if (d.toDateString() === yesterday.toDateString()) return 'Yesterday';
+    return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+  }
+
+  function isStale(isoStr, hours) {
+    if (!isoStr) return true;
+    return (Date.now() - new Date(isoStr).getTime()) > hours * 3600000;
+  }
+
+  function isoFromInputs(dateStr, timeStr) {
+    return new Date(`${dateStr}T${timeStr}`).toISOString();
+  }
+
+  // ── Render ─────────────────────────────────────────────────────────────────
+
+  function render() {
+    renderDogs();
+    renderLog();
+  }
+
+  function renderDogs() {
+    const container = document.getElementById('dogsContainer');
+    container.innerHTML = '';
+
+    for (const dog of state.dogs) {
+      const walks = state.entries.filter(e => e.dogId === dog.id && e.type === 'walk');
+      const feeds = state.entries.filter(e => e.dogId === dog.id && e.type === 'feed');
+      const lastWalk = walks.sort((a,b) => b.ts.localeCompare(a.ts))[0];
+      const lastFeed = feeds.sort((a,b) => b.ts.localeCompare(a.ts))[0];
+
+      const walkStale = isStale(lastWalk?.ts, 8);
+      const feedStale = isStale(lastFeed?.ts, 12);
+
+      const card = document.createElement('div');
+      card.className = 'dog-card';
+      card.innerHTML = `
+        <div class="dog-header">
+          <div class="dog-name-row">
+            <span class="dog-emoji">${dog.emoji}</span>
+            <button class="dog-name" onclick="startEditName(${dog.id})" title="Tap to rename">${escHtml(dog.name)}</button>
+          </div>
+        </div>
+        <div class="dog-status">
+          <div class="status-item">
+            <div class="status-label">Last Walk</div>
+            <div class="status-value ${walkStale ? 'stale' : 'ok'}">
+              ${lastWalk ? timeAgo(lastWalk.ts) : 'Never'}
+            </div>
+            ${lastWalk ? `<div class="status-detail">${formatDate(lastWalk.ts)}, ${formatTime(lastWalk.ts)}${lastWalk.duration ? ` · ${lastWalk.duration}min` : ''}${lastWalk.pee ? ' · 💛' : ''}${lastWalk.poo ? ' · 💩' : ''}</div>` : ''}
+          </div>
+          <div class="status-item">
+            <div class="status-label">Last Fed</div>
+            <div class="status-value ${feedStale ? 'stale' : 'ok'}">
+              ${lastFeed ? timeAgo(lastFeed.ts) : 'Never'}
+            </div>
+            ${lastFeed ? `<div class="status-detail">${formatDate(lastFeed.ts)}, ${formatTime(lastFeed.ts)}</div>` : ''}
+          </div>
+        </div>
+        <div class="dog-actions">
+          <button class="btn btn-walk" onclick="openWalkModal(${dog.id})">🦮 Log Walk</button>
+          <button class="btn btn-feed" onclick="openFeedModal(${dog.id})">🥣 Log Feeding</button>
+        </div>
+      `;
+      container.appendChild(card);
+    }
+  }
+
+  function renderLog() {
+    const list = document.getElementById('logList');
+    const sorted = [...state.entries].sort((a,b) => b.ts.localeCompare(a.ts)).slice(0, 30);
+
+    if (sorted.length === 0) {
+      list.innerHTML = '<div class="empty-log">No activity logged yet. Start by logging a walk or feeding!</div>';
+      return;
+    }
+
+    list.innerHTML = '';
+    for (const entry of sorted) {
+      const dog = state.dogs.find(d => d.id === entry.dogId);
+      const item = document.createElement('div');
+      item.className = 'log-item';
+
+      if (entry.type === 'walk') {
+        const badges = [
+          entry.pee ? '<span class="badge badge-pee">💛 Peed</span>' : '',
+          entry.poo ? '<span class="badge badge-poo">💩 Pooped</span>' : ''
+        ].filter(Boolean).join(' ');
+
+        item.innerHTML = `
+          <div class="log-icon">🦮</div>
+          <div class="log-body">
+            <div class="log-title">
+              <span class="log-dog-tag">${escHtml(dog?.name || '?')}</span>
+              Walk${entry.duration ? ` · ${entry.duration} min` : ''}
+              ${badges}
+            </div>
+            <div class="log-meta">${formatDate(entry.ts)} at ${formatTime(entry.ts)}</div>
+          </div>
+          <button class="log-delete" onclick="deleteEntry('${entry.id}')" title="Delete">✕</button>
+        `;
+      } else {
+        item.innerHTML = `
+          <div class="log-icon">🥣</div>
+          <div class="log-body">
+            <div class="log-title">
+              <span class="log-dog-tag">${escHtml(dog?.name || '?')}</span>
+              Fed
+            </div>
+            <div class="log-meta">${formatDate(entry.ts)} at ${formatTime(entry.ts)}</div>
+          </div>
+          <button class="log-delete" onclick="deleteEntry('${entry.id}')" title="Delete">✕</button>
+        `;
+      }
+
+      list.appendChild(item);
+    }
+  }
+
+  function escHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // ── Name editing ───────────────────────────────────────────────────────────
+
+  function startEditName(dogId) {
+    const dog = state.dogs.find(d => d.id === dogId);
+    const card = document.querySelectorAll('.dog-card')[state.dogs.indexOf(dog)];
+    const nameBtn = card.querySelector('.dog-name');
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'edit-name-input';
+    input.value = dog.name;
+    input.maxLength = 20;
+
+    nameBtn.replaceWith(input);
+    input.focus();
+    input.select();
+
+    const finish = () => {
+      const newName = input.value.trim() || dog.name;
+      dog.name = newName;
+      save();
+      render();
+    };
+
+    input.addEventListener('blur', finish);
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') input.blur();
+      if (e.key === 'Escape') { input.value = dog.name; input.blur(); }
+    });
+  }
+
+  // ── Modals ─────────────────────────────────────────────────────────────────
+
+  function openWalkModal(dogId) {
+    const dog = state.dogs.find(d => d.id === dogId);
+    activeModal = { type: 'walk', dogId };
+    document.getElementById('walkModalTitle').textContent = `Log Walk — ${dog.name}`;
+    document.getElementById('walkDate').value = nowDateStr();
+    document.getElementById('walkTime').value = nowTimeStr();
+    document.getElementById('walkDuration').value = '';
+    document.getElementById('walkPee').checked = false;
+    document.getElementById('walkPoo').checked = false;
+    document.getElementById('peeLabel').classList.remove('checked');
+    document.getElementById('pooLabel').classList.remove('checked');
+    document.getElementById('walkModal').classList.add('open');
+  }
+
+  function openFeedModal(dogId) {
+    const dog = state.dogs.find(d => d.id === dogId);
+    activeModal = { type: 'feed', dogId };
+    document.getElementById('feedModalTitle').textContent = `Log Feeding — ${dog.name}`;
+    document.getElementById('feedDate').value = nowDateStr();
+    document.getElementById('feedTime').value = nowTimeStr();
+    document.getElementById('feedModal').classList.add('open');
+  }
+
+  function closeModal(id) {
+    document.getElementById(id).classList.remove('open');
+    activeModal = null;
+  }
+
+  // Toggle checkbox styles
+  ['walkPee', 'walkPoo'].forEach(id => {
+    document.getElementById(id).addEventListener('change', function() {
+      const label = this.closest('.checkbox-label');
+      label.classList.toggle('checked', this.checked);
+    });
+  });
+
+  // Close on backdrop click
+  document.querySelectorAll('.modal-backdrop').forEach(el => {
+    el.addEventListener('click', e => {
+      if (e.target === el) el.classList.remove('open');
+    });
+  });
+
+  // ── Save entries ───────────────────────────────────────────────────────────
+
+  function uid() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  }
+
+  function saveWalk() {
+    if (!activeModal) return;
+    const dateVal = document.getElementById('walkDate').value;
+    const timeVal = document.getElementById('walkTime').value;
+    const duration = parseInt(document.getElementById('walkDuration').value) || null;
+    const pee = document.getElementById('walkPee').checked;
+    const poo = document.getElementById('walkPoo').checked;
+
+    if (!dateVal || !timeVal) { alert('Please set a date and time.'); return; }
+
+    state.entries.push({
+      id: uid(),
+      dogId: activeModal.dogId,
+      type: 'walk',
+      ts: isoFromInputs(dateVal, timeVal),
+      duration,
+      pee,
+      poo
+    });
+
+    save();
+    closeModal('walkModal');
+    render();
+  }
+
+  function saveFeed() {
+    if (!activeModal) return;
+    const dateVal = document.getElementById('feedDate').value;
+    const timeVal = document.getElementById('feedTime').value;
+
+    if (!dateVal || !timeVal) { alert('Please set a date and time.'); return; }
+
+    state.entries.push({
+      id: uid(),
+      dogId: activeModal.dogId,
+      type: 'feed',
+      ts: isoFromInputs(dateVal, timeVal)
+    });
+
+    save();
+    closeModal('feedModal');
+    render();
+  }
+
+  function deleteEntry(id) {
+    state.entries = state.entries.filter(e => e.id !== id);
+    save();
+    render();
+  }
+
+  // ── Auto-refresh time-ago labels ───────────────────────────────────────────
+
+  setInterval(render, 60000);
+
+  // ── Init ───────────────────────────────────────────────────────────────────
+
+  render();
+</script>
+</body>
+</html>
