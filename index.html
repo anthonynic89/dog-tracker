@@ -418,6 +418,37 @@
     .badge-pee { background: #fff3cd; color: #8a6914; }
     .badge-poo { background: #e8d5c4; color: #6b3f1a; }
 
+    .btn-pee {
+      background: #fff3cd;
+      color: #7a5c10;
+      border: 1.5px solid #f0d87a;
+      grid-column: 1 / -1;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: #2d2017;
+      color: #fff;
+      padding: 0.65rem 1.25rem;
+      border-radius: 999px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      white-space: nowrap;
+      z-index: 200;
+      transition: transform 0.25s ease, opacity 0.25s ease;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
     @media (min-width: 480px) {
       .container { padding: 1.25rem 1.25rem 0; }
       .modal { border-radius: 24px; margin-bottom: 2rem; }
@@ -435,6 +466,8 @@
     <span id="syncLabel">Synced</span>
   </div>
 </header>
+
+<div class="toast" id="toast"></div>
 
 <div class="container">
   <div class="dogs" id="dogsContainer">
@@ -675,7 +708,7 @@
     container.innerHTML = '';
 
     for (const dog of state.dogs) {
-      const walks = state.entries.filter(e => e.dogId === dog.id && e.type === 'walk');
+      const walks = state.entries.filter(e => e.dogId === dog.id && (e.type === 'walk' || e.type === 'pee'));
       const feeds = state.entries.filter(e => e.dogId === dog.id && e.type === 'feed');
       const lastWalk = walks.sort((a,b) => b.ts.localeCompare(a.ts))[0];
       const lastFeed = feeds.sort((a,b) => b.ts.localeCompare(a.ts))[0];
@@ -711,6 +744,7 @@
         <div class="dog-actions">
           <button class="btn btn-walk" onclick="openWalkModal(${dog.id})">🦮 Log Walk</button>
           <button class="btn btn-feed" onclick="openFeedModal(${dog.id})">🥣 Log Feeding</button>
+          <button class="btn btn-pee" onclick="logPeeBreak(${dog.id})">💛 Quick Pee Break</button>
         </div>
       `;
       container.appendChild(card);
@@ -745,6 +779,18 @@
               <span class="log-dog-tag">${escHtml(dog?.name || '?')}</span>
               Walk${entry.duration ? ` · ${entry.duration} min` : ''}
               ${badges}
+            </div>
+            <div class="log-meta">${formatDate(entry.ts)} at ${formatTime(entry.ts)}</div>
+          </div>
+          <button class="log-delete" onclick="deleteEntry('${entry.id}')" title="Delete">✕</button>
+        `;
+      } else if (entry.type === 'pee') {
+        item.innerHTML = `
+          <div class="log-icon">💛</div>
+          <div class="log-body">
+            <div class="log-title">
+              <span class="log-dog-tag">${escHtml(dog?.name || '?')}</span>
+              Pee Break
             </div>
             <div class="log-meta">${formatDate(entry.ts)} at ${formatTime(entry.ts)}</div>
           </div>
@@ -895,6 +941,28 @@
     state.entries = state.entries.filter(e => e.id !== id);
     save();
     render();
+  }
+
+  // ── Quick pee break ────────────────────────────────────────────────────────
+
+  function logPeeBreak(dogId) {
+    const dog = state.dogs.find(d => d.id === dogId);
+    state.entries.push({
+      id: uid(),
+      dogId,
+      type: 'pee',
+      ts: new Date().toISOString()
+    });
+    save();
+    render();
+    showToast(`💛 Pee break logged for ${dog.name}`);
+  }
+
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2500);
   }
 
   // ── Auto-refresh time-ago labels ───────────────────────────────────────────
